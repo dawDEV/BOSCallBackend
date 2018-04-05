@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create
+      
+  datasource:
+    url: jdbc:mysql://localhost:3306/boscall
+    username: root
+    password: 
