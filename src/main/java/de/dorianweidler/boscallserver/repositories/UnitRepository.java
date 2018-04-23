@@ -1,11 +1,9 @@
 package de.dorianweidler.boscallserver.repositories;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.repository.CrudRepository;
 
 import de.dorianweidler.boscallserver.dto.Unit;
 
-@RepositoryRestResource
-public interface UnitRepository extends JpaRepository<Unit, Integer> {
+public interface UnitRepository extends CrudRepository<Unit, Long> {
 
 }
