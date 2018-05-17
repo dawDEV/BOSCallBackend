@@ -7,10 +7,10 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class RegistrationRequest {
+public class UnregistrationRequest {
 
 	private long unitId;
-	private String secret;
-	private String token;
+	private String apiKey;
+	private long userId;
 	
 }

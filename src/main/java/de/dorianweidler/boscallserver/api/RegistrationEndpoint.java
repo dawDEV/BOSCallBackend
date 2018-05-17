@@ -1,37 +1,98 @@
 package de.dorianweidler.boscallserver.api;
 
+import java.util.ArrayList;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.dorianweidler.boscallserver.api.dto.RegistrationRequest;
+import de.dorianweidler.boscallserver.api.dto.RegistrationResponse;
+import de.dorianweidler.boscallserver.api.dto.UnregistrationRequest;
 import de.dorianweidler.boscallserver.dto.Unit;
+import de.dorianweidler.boscallserver.dto.User;
 import de.dorianweidler.boscallserver.repositories.UnitRepository;
+import de.dorianweidler.boscallserver.repositories.UserRepository;
+import de.dorianweidler.boscallserver.util.Util;
 
 @RestController
 @RequestMapping(path = "api")
 public class RegistrationEndpoint {
-	
+
+	final int API_KEY_LENGTH = 128;
+
 	@Autowired
 	UnitRepository unitRepository;
 
-	@RequestMapping(path = "register", method = RequestMethod.POST)
-	public boolean register(@RequestBody(required = false) RegistrationRequest registrationRequest) {
-		if(registrationRequest == null) {
-			return false;
+	@Autowired
+	UserRepository userRepository;
+
+	@RequestMapping(path = "registration", method = RequestMethod.POST)
+	public ResponseEntity<RegistrationResponse> register(
+			@RequestBody(required = false) RegistrationRequest registrationRequest) {
+		if (registrationRequest == null) {
+			return null;
 		}
-		System.err.println("======= REQUEST =======");
-		System.err.println(registrationRequest);
-		
-		System.err.println("======= Found Element =======");
-		Unit u = unitRepository.findById(registrationRequest.getUnitId()).orElse(null);
-		
-		System.err.println(u);
-		
-		
-		return false;
+
+		Unit unitDto = unitRepository.findByIdAndSecret(registrationRequest.getUnitId(),
+				registrationRequest.getSecret());
+
+		if (unitDto != null) {
+			User userDto = userRepository.findByToken(registrationRequest.getToken());
+
+			if (userDto == null) {
+				// everything correct
+				String apiKey = Util.generateRandomString(API_KEY_LENGTH);
+				userDto = new User();
+				userDto.setApiKey(apiKey);
+			}
+			
+			if (userDto.getUnits() == null) {
+				userDto.setUnits(new ArrayList<>());
+			} else {
+				if(userDto.getUnits().indexOf(unitDto) >= 0) {
+					return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+				}
+			}
+			
+			userDto.getUnits().add(unitDto);
+			userDto.setToken(registrationRequest.getToken());
+			userDto = userRepository.save(userDto);
+
+			RegistrationResponse responseBody = new RegistrationResponse();
+			responseBody.setApiKey(userDto.getApiKey());
+			responseBody.setUserId(userDto.getId());
+			responseBody.setUnitName(unitDto.getName());
+			ResponseEntity<RegistrationResponse> response = new ResponseEntity<>(responseBody, HttpStatus.CREATED);
+			return response;
+		}
+		return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 	}
-	
+
+	@RequestMapping(path = "registration", method = RequestMethod.DELETE)
+	public ResponseEntity<RegistrationResponse> unregister(
+			@RequestBody(required = false) UnregistrationRequest unregistrationRequest) {
+		if (unregistrationRequest == null) {
+			return null;
+		}
+
+		Unit unitDto = unitRepository.findById(unregistrationRequest.getUnitId());
+		User userDto = userRepository.findByIdAndApiKey(unregistrationRequest.getUserId(),
+				unregistrationRequest.getApiKey());
+
+		if (userDto != null && unitDto != null) {
+			int pos = userDto.getUnits().indexOf(unitDto);
+			if (pos >= 0) {
+				userDto.getUnits().remove(pos);
+				userRepository.save(userDto);
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			}
+		}
+		return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+	}
+
 }
