@@ -1,6 +1,8 @@
 package de.dorianweidler.boscallserver.api;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -24,21 +26,17 @@ public class UpdateTokenEndpoint {
 	UserRepository userRepository;
 
 	@RequestMapping(path = "updateToken", method = RequestMethod.POST)
-	public boolean updateToken(@RequestBody(required = false) UpdateTokenRequest request) {
+	public ResponseEntity<Object> updateToken(@RequestBody(required = false) UpdateTokenRequest request) {
 		if (request == null) {
-			return false;
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
 		User userDto = userRepository.findByIdAndApiKey(request.getUserId(), request.getApiKey());
-
-		if (userDto != null) {
-			// everything correct
-			userDto.setToken(request.getToken());
-			userRepository.save(userDto);
-			return true;
-		}
-
-		return false;
+		userDto.setToken(request.getToken());
+		userDto.setName(request.getUserName());
+		userRepository.save(userDto);
+		
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
 }

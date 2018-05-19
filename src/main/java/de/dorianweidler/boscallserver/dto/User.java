@@ -30,5 +30,6 @@ public class User {
 	List<Unit> units;
 	String apiKey;
 	String token;
+	String name;
 	
 }

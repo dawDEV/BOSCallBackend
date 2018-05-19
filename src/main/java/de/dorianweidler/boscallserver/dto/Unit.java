@@ -32,7 +32,6 @@ public class Unit {
 	String name;
 	
 	@ManyToMany(mappedBy = "units", cascade = CascadeType.ALL)
-	//@JoinTable(name = "user_unit")
 	List<User> users;
 	
 }

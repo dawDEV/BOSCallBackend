@@ -12,5 +12,6 @@ public class UpdateTokenRequest {
 	private int userId;
 	private String apiKey;
 	private String token;
+	private String userName;
 	
 }

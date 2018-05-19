@@ -1,6 +1,8 @@
 package de.dorianweidler.boscallserver.api;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.dorianweidler.boscallserver.api.dto.RetrieveUnitsRequest;
 import de.dorianweidler.boscallserver.api.dto.RegistrationRequest;
 import de.dorianweidler.boscallserver.api.dto.RegistrationResponse;
 import de.dorianweidler.boscallserver.api.dto.UnregistrationRequest;
@@ -35,7 +38,7 @@ public class RegistrationEndpoint {
 	public ResponseEntity<RegistrationResponse> register(
 			@RequestBody(required = false) RegistrationRequest registrationRequest) {
 		if (registrationRequest == null) {
-			return null;
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
 		Unit unitDto = unitRepository.findByIdAndSecret(registrationRequest.getUnitId(),
@@ -61,6 +64,7 @@ public class RegistrationEndpoint {
 			
 			userDto.getUnits().add(unitDto);
 			userDto.setToken(registrationRequest.getToken());
+			userDto.setName(registrationRequest.getUserName());
 			userDto = userRepository.save(userDto);
 
 			RegistrationResponse responseBody = new RegistrationResponse();
@@ -77,7 +81,7 @@ public class RegistrationEndpoint {
 	public ResponseEntity<RegistrationResponse> unregister(
 			@RequestBody(required = false) UnregistrationRequest unregistrationRequest) {
 		if (unregistrationRequest == null) {
-			return null;
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
 		Unit unitDto = unitRepository.findById(unregistrationRequest.getUnitId());
@@ -92,7 +96,21 @@ public class RegistrationEndpoint {
 				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 			}
 		}
-		return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+	}
+	
+	@RequestMapping(path = "units", method = RequestMethod.POST)
+	public ResponseEntity<List<BigInteger>> getUnits(@RequestBody(required = false) RetrieveUnitsRequest request) {
+		if(request == null) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+		
+		User userDto = userRepository.findByIdAndApiKey(request.getUserId(), request.getApiKey());
+		if(userDto == null) {
+			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+		}
+		
+		return new ResponseEntity<List<BigInteger>>(unitRepository.findUnitIdsByUserId(request.getUserId()), HttpStatus.OK);
 	}
 
 }
