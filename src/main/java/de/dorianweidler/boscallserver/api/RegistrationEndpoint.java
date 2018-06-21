@@ -40,7 +40,7 @@ public class RegistrationEndpoint {
 		if (registrationRequest == null) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
-
+		
 		Unit unitDto = unitRepository.findByIdAndSecret(registrationRequest.getUnitId(),
 				registrationRequest.getSecret());
 
